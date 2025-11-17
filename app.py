@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 # ------------------------------
 st.set_page_config(
     page_title="World Happiness Dashboard 2023",
-    page_icon="🌎",
+    page_icon="😁",
     layout="wide"
 )
 
@@ -28,14 +28,17 @@ def load_data():
     })
     # Filter for 2023 only
     df = df[df["year"] == 2023].copy()
+    
     return df
 
 df = load_data()
 
+
+
 # ------------------------------
 # Title & Description
 # ------------------------------
-st.title("🌎 World Happiness Report 2023")
+st.title("😁 World Happiness Report 2023")
 st.subheader("🧑‍💻 Rui Manuel A. Palabon - BSCS3 Machine Problem 3")
 st.markdown("""
 See which countries are the happiest in 2023! Compare different countries and learn what makes people happy 😊 or unhappy 😞 around the world.
@@ -90,8 +93,8 @@ st.header("🏆 Happiness Rankings")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Top 15 Happiest Countries")
-    top15 = df.nlargest(15, "Happiness").sort_values("Happiness", ascending=True)
+    st.subheader("Top 10 Happiest Countries 😸")
+    top15 = df.nlargest(10, "Happiness").sort_values("Happiness", ascending=True)
     
     fig1 = px.bar(
         top15,
@@ -106,7 +109,7 @@ with col1:
     st.plotly_chart(fig1, use_container_width=True)
 
 with col2:
-    st.subheader("Bottom 15 Countries")
+    st.subheader("Bottom 10 Countries 😿")
     bottom15 = df.nsmallest(15, "Happiness").sort_values("Happiness", ascending=False)
     
     fig2 = px.bar(
