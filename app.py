@@ -39,19 +39,74 @@ See which countries are the happiest in 2023! Compare different countries and le
 # ------------------------------
 st.sidebar.header("🔍 Filters")
 
-countries = sorted(df["Country name"].unique())
+# Regional filter
+regions = ["All Regions"] + sorted(df["Regional indicator"].unique().tolist())
+selected_region = st.sidebar.selectbox(
+    "Filter by Region",
+    regions
+)
+
+# Apply regional filter
+if selected_region != "All Regions":
+    df_filtered = df[df["Regional indicator"] == selected_region].copy()
+else:
+    df_filtered = df.copy()
+
+# Happiness score range filter
+min_score = float(df["Ladder score"].min())
+max_score = float(df["Ladder score"].max())
+
+score_range = st.sidebar.slider(
+    "Happiness Score Range",
+    min_value=min_score,
+    max_value=max_score,
+    value=(min_score, max_score),
+    step=0.1
+)
+
+# Apply happiness score filter
+df_filtered = df_filtered[
+    (df_filtered["Ladder score"] >= score_range[0]) & 
+    (df_filtered["Ladder score"] <= score_range[1])
+]
+
+# GDP filter
+if "Log GDP per capita" in df_filtered.columns:
+    gdp_min = float(df_filtered["Log GDP per capita"].min())
+    gdp_max = float(df_filtered["Log GDP per capita"].max())
+    
+    gdp_range = st.sidebar.slider(
+        "GDP per Capita Range (Log)",
+        min_value=gdp_min,
+        max_value=gdp_max,
+        value=(gdp_min, gdp_max),
+        step=0.1
+    )
+    
+    df_filtered = df_filtered[
+        (df_filtered["Log GDP per capita"] >= gdp_range[0]) & 
+        (df_filtered["Log GDP per capita"] <= gdp_range[1])
+    ]
+
+st.sidebar.markdown(f"**Showing {len(df_filtered)} of {len(df)} countries**")
+
+countries = sorted(df_filtered["Country name"].unique())
 
 # Country multi-select
 default_countries = ["United States", "Finland", "Denmark", "Japan", "Brazil"]
 available_defaults = [c for c in default_countries if c in countries]
 if not available_defaults:
-    available_defaults = countries[:5]
+    available_defaults = countries[:5] if len(countries) >= 5 else countries
 
 selected_countries = st.sidebar.multiselect(
     "Select Countries to Compare",
     countries,
     default=available_defaults
 )
+
+# Reset filters button
+if st.sidebar.button("🔄 Reset All Filters"):
+    st.rerun()
 
 # ------------------------------
 # Key Metrics
@@ -61,23 +116,23 @@ st.header("📊 2023 Global Happiness Overview")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    avg_happiness = df["Ladder score"].mean()
+    avg_happiness = df_filtered["Ladder score"].mean()
     st.metric("Global Average", f"{avg_happiness:.2f}")
 
 with col2:
-    happiest = df.nlargest(1, "Ladder score")
+    happiest = df_filtered.nlargest(1, "Ladder score")
     if len(happiest) > 0:
         st.metric("Happiest Country", happiest["Country name"].values[0])
         st.caption(f"Score: {happiest['Ladder score'].values[0]:.2f}")
 
 with col3:
-    least_happy = df.nsmallest(1, "Ladder score")
+    least_happy = df_filtered.nsmallest(1, "Ladder score")
     if len(least_happy) > 0:
         st.metric("Least Happy Country", least_happy["Country name"].values[0])
         st.caption(f"Score: {least_happy['Ladder score'].values[0]:.2f}")
 
 with col4:
-    total_countries = len(df)
+    total_countries = len(df_filtered)
     st.metric("Total Countries", total_countries)
 
 # ------------------------------
@@ -89,7 +144,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("Top 10 Happiest Countries 😸")
-    top10 = df.nlargest(10, "Ladder score").sort_values("Ladder score", ascending=True)
+    top10 = df_filtered.nlargest(10, "Ladder score").sort_values("Ladder score", ascending=True)
     
     fig1 = px.bar(
         top10,
@@ -105,7 +160,7 @@ with col1:
 
 with col2:
     st.subheader("Bottom 10 Countries 😿")
-    bottom10 = df.nsmallest(10, "Ladder score").sort_values("Ladder score", ascending=False)
+    bottom10 = df_filtered.nsmallest(10, "Ladder score").sort_values("Ladder score", ascending=False)
     
     fig2 = px.bar(
         bottom10,
@@ -125,7 +180,7 @@ with col2:
 st.header("🗺️ Global Happiness Map")
 
 fig_map = px.choropleth(
-    df,
+    df_filtered,
     locations="Country name",
     locationmode="country names",
     color="Ladder score",
@@ -134,7 +189,8 @@ fig_map = px.choropleth(
         "Ladder score": ":.2f",
         "Log GDP per capita": ":.2f",
         "Social support": ":.2f",
-        "Freedom to make life choices": ":.2f"
+        "Freedom to make life choices": ":.2f",
+        "Regional indicator": True
     },
     color_continuous_scale="RdYlGn",
     title="World Happiness Scores in 2023",
