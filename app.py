@@ -88,8 +88,6 @@ if "Log GDP per capita" in df_filtered.columns:
         (df_filtered["Log GDP per capita"] <= gdp_range[1])
     ]
 
-st.sidebar.markdown(f"**Showing {len(df_filtered)} of {len(df)} countries**")
-
 countries = sorted(df_filtered["Country name"].unique())
 
 # Country multi-select
